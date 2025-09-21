@@ -1,0 +1,45 @@
+from .encoder import AudioEncoder
+from .protocol_conf import ProtocolConfig
+
+__version__ = "1.0.0"
+__author__ = "mk"
+
+
+def create_encoder(config: ProtocolConfig = None) -> AudioEncoder:
+    if config:
+        return AudioEncoder(
+            sample_rate=config.sample_rate,
+            frequency_high=config.frequency_high,
+            frequency_low=config.frequency_low
+        )
+
+    return AudioEncoder()
+
+def encode_text_to_audio(text: str, config: ProtocolConfig = None) -> tuple:
+    encoder = create_encoder(config)
+    audio_data = encoder.encode_text_to_audio(text)
+    return audio_data, encoder
+
+def decode_audio_to_text(audio_data, config: ProtocolConfig = None) -> str:
+    encoder = create_encoder(config)
+    return encoder.decode_audio_to_text(audio_data)
+
+def encode_bytes_to_audio(data: bytes, config: ProtocolConfig = None) -> tuple:
+    encoder = create_encoder(config)
+    audio_data = encoder.encode_bytes_to_audio(data)
+    return audio_data, encoder
+
+def decode_audio_to_bytes(audio_data, config: ProtocolConfig = None) -> bytes:
+    encoder = create_encoder(config)
+    return encoder.decode_audio_to_bytes(audio_data)
+
+
+__all__ = [
+    "AudioEncoder",
+    "ProtocolConfig",
+    "create_encoder",
+    "encode_text_to_audio",
+    "decode_audio_to_text",
+    "encode_bytes_to_audio",
+    "decode_audio_to_bytes"
+]
