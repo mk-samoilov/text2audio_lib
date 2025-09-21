@@ -1,5 +1,10 @@
 import numpy as np
 
+import gzip
+import lzma
+import bz2
+import zlib
+
 
 class AudioEncoder:
     def __init__(self, sample_rate: int = 22050, frequency_high: int = 2400, frequency_low: int = 800, bit_duration: float = 0.02, silence_duration: float = 0.01):
@@ -42,6 +47,50 @@ class AudioEncoder:
     def _generate_silence(self, duration: float) -> np.ndarray:
         return np.zeros(int(self.sample_rate * duration))
     
+    @staticmethod
+    def _compress_data(data: bytes, method: str = "gzip") -> bytes:
+        if method == "gzip":
+            return gzip.compress(data)
+        elif method == "lzma":
+            return lzma.compress(data)
+        elif method == "bz2":
+            return bz2.compress(data)
+        elif method == "zlib":
+            return zlib.compress(data)
+        else:
+            raise ValueError(f"Неподдерживаемый метод сжатия: {method}")
+    
+    @staticmethod
+    def _decompress_data(compressed_data: bytes, method: str = "gzip") -> bytes:
+        if method == "gzip":
+            return gzip.decompress(compressed_data)
+        elif method == "lzma":
+            return lzma.decompress(compressed_data)
+        elif method == "bz2":
+            return bz2.decompress(compressed_data)
+        elif method == "zlib":
+            return zlib.decompress(compressed_data)
+        else:
+            raise ValueError(f"Неподдерживаемый метод сжатия: {method}")
+    
+    @staticmethod
+    def _get_best_compression_method(data: bytes) -> tuple:
+        methods = ["gzip", "lzma", "bz2", "zlib"]
+        best_method = "gzip"
+        best_ratio = 1.0
+        
+        for method in methods:
+            try:
+                compressed = AudioEncoder._compress_data(data, method)
+                ratio = len(compressed) / len(data)
+                if ratio < best_ratio:
+                    best_ratio = ratio
+                    best_method = method
+            except:
+                continue
+                
+        return best_method, best_ratio
+    
     def encode_text_to_audio(self, text: str) -> np.ndarray:
         bits = self._text_to_bits(text)
         return self._encode_bits_to_audio(bits)
@@ -49,6 +98,21 @@ class AudioEncoder:
     def encode_bytes_to_audio(self, data: bytes) -> np.ndarray:
         bits = self._bytes_to_bits(data)
         return self._encode_bits_to_audio(bits)
+    
+    def encode_bytes_to_audio_compressed(self, data: bytes, compression_method: str = None) -> tuple:
+        if compression_method is None:
+            compression_method, ratio = self._get_best_compression_method(data)
+        
+        compressed_data = self._compress_data(data, compression_method)
+        
+        method_header = compression_method.encode("utf-8")
+        method_header_len = len(method_header).to_bytes(4, "big")
+        
+        full_data = method_header_len + method_header + compressed_data
+        bits = self._bytes_to_bits(full_data)
+        audio_data = self._encode_bits_to_audio(bits)
+        
+        return audio_data, compression_method
     
     def _encode_bits_to_audio(self, bits: str) -> np.ndarray:
         chunk_size = 1000
@@ -79,6 +143,23 @@ class AudioEncoder:
     def decode_audio_to_bytes(self, audio_data: np.ndarray) -> bytes:
         bits = self._decode_audio_to_bits(audio_data)
         return self._bits_to_bytes(bits)
+    
+    def decode_audio_to_bytes_compressed(self, audio_data: np.ndarray) -> bytes:
+        bits = self._decode_audio_to_bits(audio_data)
+        full_data = self._bits_to_bytes(bits)
+        
+        if len(full_data) < 4:
+            raise ValueError("Недостаточно данных для декодирования")
+        
+        method_header_len = int.from_bytes(full_data[:4], "big")
+        if len(full_data) < 4 + method_header_len:
+            raise ValueError("Недостаточно данных для метода сжатия")
+        
+        compression_method = full_data[4:4+method_header_len].decode("utf-8")
+        compressed_data = full_data[4+method_header_len:]
+        
+        original_data = self._decompress_data(compressed_data, compression_method)
+        return original_data
     
     def _decode_audio_to_bits(self, audio_data: np.ndarray) -> str:
         bits = ""

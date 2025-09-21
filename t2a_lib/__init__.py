@@ -38,6 +38,17 @@ def decode_audio_to_bytes(audio_data, config: ProtocolConfig = None) -> bytes:
     return encoder_.decode_audio_to_bytes(audio_data)
 
 
+def encode_bytes_to_audio_compressed(data: bytes, config: ProtocolConfig = None, compression_method: str = None) -> tuple:
+    encoder_ = create_encoder(config)
+    audio_data, method = encoder_.encode_bytes_to_audio_compressed(data, compression_method)
+    return audio_data, encoder_, method
+
+
+def decode_audio_to_bytes_compressed(audio_data, config: ProtocolConfig = None) -> bytes:
+    encoder_ = create_encoder(config)
+    return encoder_.decode_audio_to_bytes_compressed(audio_data)
+
+
 __all__ = [
     "AudioEncoder",
     "ProtocolConfig",
@@ -46,6 +57,8 @@ __all__ = [
     "decode_audio_to_text",
     "encode_bytes_to_audio",
     "decode_audio_to_bytes",
+    "encode_bytes_to_audio_compressed",
+    "decode_audio_to_bytes_compressed",
     "save_audio_to_wav",
     "load_audio_from_wav",
     "normalize_audio",
