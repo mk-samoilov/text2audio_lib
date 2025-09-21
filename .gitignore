@@ -4,3 +4,6 @@ venv
 .idea
 
 __pycache__
+
+encoded_data.wav
+32kb_data.wav

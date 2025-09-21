@@ -2,12 +2,12 @@ import numpy as np
 
 
 class AudioEncoder:
-    def __init__(self, sample_rate: int = 44100, frequency_high: int = 2000, frequency_low: int = 1000):
+    def __init__(self, sample_rate: int = 22050, frequency_high: int = 2400, frequency_low: int = 800, bit_duration: float = 0.02, silence_duration: float = 0.01):
         self.sample_rate = sample_rate
         self.frequency_high = frequency_high
         self.frequency_low = frequency_low
-        self.bit_duration = 0.1
-        self.silence_duration = 0.05
+        self.bit_duration = bit_duration
+        self.silence_duration = silence_duration
         
     @staticmethod
     def _text_to_bits(text: str) -> str:
@@ -51,18 +51,26 @@ class AudioEncoder:
         return self._encode_bits_to_audio(bits)
     
     def _encode_bits_to_audio(self, bits: str) -> np.ndarray:
-        audio_data = []
+        chunk_size = 1000
+        audio_chunks = []
         
-        for bit in bits:
-            if bit == "1":
-                tone = self._generate_tone(self.frequency_high, self.bit_duration)
-            else:
-                tone = self._generate_tone(self.frequency_low, self.bit_duration)
+        for i in range(0, len(bits), chunk_size):
+            bit_chunk = bits[i:i+chunk_size]
+            chunk_audio = []
             
-            audio_data.append(tone)
-            audio_data.append(self._generate_silence(self.silence_duration))
+            for bit in bit_chunk:
+                if bit == "1":
+                    tone = self._generate_tone(self.frequency_high, self.bit_duration)
+                else:
+                    tone = self._generate_tone(self.frequency_low, self.bit_duration)
+                
+                chunk_audio.append(tone)
+                chunk_audio.append(self._generate_silence(self.silence_duration))
+            
+            if chunk_audio:
+                audio_chunks.append(np.concatenate(chunk_audio))
         
-        return np.concatenate(audio_data)
+        return np.concatenate(audio_chunks)
     
     def decode_audio_to_text(self, audio_data: np.ndarray) -> str:
         bits = self._decode_audio_to_bits(audio_data)

@@ -4,11 +4,11 @@ from typing import Dict, Any
 
 @dataclass
 class ProtocolConfig:
-    sample_rate: int = 44100
+    sample_rate: int = 16000
     frequency_high: int = 2000
     frequency_low: int = 1000
-    bit_duration: float = 0.1
-    silence_duration: float = 0.05
+    bit_duration: float = 0.005
+    silence_duration: float = 0.002
     start_marker: str = "11111111"
     end_marker: str = "00000000"
     
